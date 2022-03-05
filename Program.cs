@@ -14,8 +14,6 @@ namespace MyTelegram.Bot
     {
         private static TelegramBotClient botClient;
         private const string urlCoinString = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=space-hamster&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=1h%2C24h%2C7d";
-
-
         static void Main()
         {
             botClient = new TelegramBotClient("2016040925:AAGxwLKV6ZikKCqVHkrT4fQ27c9zQ8ry-QU");
