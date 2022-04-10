@@ -1,119 +1,97 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
-using Telegram.Bot.Args;
+using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace MyTelegram.Bot
+namespace HamsBotTelegram
 {
     class Program
     {
-        private static TelegramBotClient botClient;
-        private const string urlCoinString = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=space-hamster&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=1h%2C24h%2C7d";
+        private static ITelegramBotClient _bot = new TelegramBotClient("Token");
+
         static void Main()
         {
-            botClient = new TelegramBotClient("2016040925:AAGxwLKV6ZikKCqVHkrT4fQ27c9zQ8ry-QU");
-            botClient.OnMessage += OnMessageHandlerAsync;
-            botClient.StartReceiving();
-            Thread.Sleep(int.MaxValue);
+            Console.WriteLine("Bot launched " + _bot.GetMeAsync().Result.FirstName);
+            var cts = new CancellationTokenSource();
+            var cancellationToken = cts.Token;
+            var receiverOptions = new ReceiverOptions();
+            _bot.StartReceiving(HandleUpdateAsync, HandleErrorAsync, receiverOptions, cancellationToken);
+            Console.ReadLine();
         }
 
-        static async void OnMessageHandlerAsync(object sender, MessageEventArgs e)
+        public static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
-            if (e.Message.Text != null)
+            if (update.Message?.Text != null)
             {
-                switch (e.Message.Text.ToLower())
+                switch (update.Message.Text.ToLower())
                 {
-                    case string message when message.Contains("/price"):
-                        await PreparingMessagePriceTeam(e);
+                    case { } message when message.Contains("/price"):
+                        await PreparingMessagePriceTeam(update);
                         break;
-                    case string message when message.Contains("/farm"):
-                        await PreparingMessageFarmTeam(e);
+                    case { } message when message.Contains("/farm"):
+                        await PreparingMessageFarmTeam(update);
                         break;
-                    case string message when message.Contains("buy"):
-                        await PreparingMessageBuyTeam(e);
+                    case { } message when message.Contains("buy"):
+                        await PreparingMessageBuyTeam(update);
                         break;
-                    case string message when message.Contains("nft"):
-                        await PreparingMessageNftTeam(e);
+                    case { } message when message.Contains("nft"):
+                        await PreparingMessageNftTeam(update);
                         break;
                 }
             }
 
-            Console.WriteLine($"Received a text message in chat {e.Message.Chat.Id} an user name {e.Message.Chat.Username}.");
         }
 
-        static async Task PreparingMessageBuyTeam(MessageEventArgs e)
+        static async Task PreparingMessagePriceTeam(Update update)
+        {
+            Coin coin = new Coin().GetApiDataAsync().Result;
+            string coinInfo = $"{coin.name} - ${coin.symbol.ToUpper()}\n" +
+                              $"💰 Price: ${coin.current_price ?? 0:f5}\n" +
+                              $"⚖️ H: ${coin.high_24h ?? 0:f5}" +
+                              $" | L: ${coin.low_24h ?? 0:f5}\n" +
+                              $"🌚 1h: {coin.price_change_percentage_1h_in_currency ?? 0:f2}% \n" +
+                              $"🌚 24h: {coin.price_change_percentage_24h_in_currency ?? 0:f2}% \n" +
+                              $"📈 7d: {coin.price_change_percentage_7d_in_currency ?? 0:f2}% \n" +
+                              $"📊 Volume: ${coin.total_volume ?? 0:f2}\n";
+            await SendMessage(update.Message?.Chat, coinInfo);
+        }
+
+        static async Task PreparingMessageBuyTeam(Update update)
         {
             var listMarketPrice = new InlineKeyboardMarkup(new[]{
-                  new [] {InlineKeyboardButton.WithUrl(text: "HAMS DEX", url: "https://dex.solhamster.space/#/market/5j6hdwx4eW3QBYZtRjKiUj7aDA1dxDpveSHBznwq7kUv"), InlineKeyboardButton.WithUrl(text: "DexLab", url: "https://trade.dexlab.space/#/market/5j6hdwx4eW3QBYZtRjKiUj7aDA1dxDpveSHBznwq7kUv")},
-                  new [] {InlineKeyboardButton.WithUrl(text: "Aldrin", url: "https://dex.aldrin.com/chart/spot/HAMS_USDC"), InlineKeyboardButton.WithUrl(text: "LoverDEX", url: "https://samoyedlovers.co/#/market/5j6hdwx4eW3QBYZtRjKiUj7aDA1dxDpveSHBznwq7kUv")},
-                  new [] {InlineKeyboardButton.WithUrl(text: "NoGoalDex", url: "https://dex.nogoal.click/#/market/5j6hdwx4eW3QBYZtRjKiUj7aDA1dxDpveSHBznwq7kUv"), InlineKeyboardButton.WithUrl(text: "Cato Dex", url: "https://catodex.com/#/market/5j6hdwx4eW3QBYZtRjKiUj7aDA1dxDpveSHBznwq7kUv")},
-                  new [] {InlineKeyboardButton.WithUrl(text: "Raydium Swap", url: "https://raydium.io/swap/?ammId=z2KxiSejQmNNsyxLFHbrewNLDeGLFZahFNSLYht2FFs"), InlineKeyboardButton.WithUrl(text: "Jupiter Swap", url: "https://jup.ag/swap/HAMS-USDC")}});
-            await SendButtonMessage(e.Message.Chat, "Buy $HAMS. Click 👇", listMarketPrice);
+                new [] {InlineKeyboardButton.WithUrl(text: "HAMS DEX", url: "https://dex.solhamster.space/#/market/5j6hdwx4eW3QBYZtRjKiUj7aDA1dxDpveSHBznwq7kUv"), InlineKeyboardButton.WithUrl(text: "DexLab", url: "https://trade.dexlab.space/#/market/5j6hdwx4eW3QBYZtRjKiUj7aDA1dxDpveSHBznwq7kUv")},
+                new [] {InlineKeyboardButton.WithUrl(text: "Aldrin", url: "https://dex.aldrin.com/chart/spot/HAMS_USDC"), InlineKeyboardButton.WithUrl(text: "LoverDEX", url: "https://samoyedlovers.co/#/market/5j6hdwx4eW3QBYZtRjKiUj7aDA1dxDpveSHBznwq7kUv")},
+                new [] {InlineKeyboardButton.WithUrl(text: "NoGoalDex", url: "https://dex.nogoal.click/#/market/5j6hdwx4eW3QBYZtRjKiUj7aDA1dxDpveSHBznwq7kUv"), InlineKeyboardButton.WithUrl(text: "Cato Dex", url: "https://catodex.com/#/market/5j6hdwx4eW3QBYZtRjKiUj7aDA1dxDpveSHBznwq7kUv")},
+                new [] {InlineKeyboardButton.WithUrl(text: "Raydium Swap", url: "https://raydium.io/swap/?ammId=z2KxiSejQmNNsyxLFHbrewNLDeGLFZahFNSLYht2FFs"), InlineKeyboardButton.WithUrl(text: "Jupiter Swap", url: "https://jup.ag/swap/HAMS-USDC")}});
+            await SendMessage(update.Message?.Chat, "Buy $HAMS. Click 👇", listMarketPrice);
         }
 
-        static async Task PreparingMessageFarmTeam(MessageEventArgs e)
+        static async Task PreparingMessageNftTeam(Update update)
         {
-            var listMarketPriceFARM = InlineKeyboardButton.WithUrl(text: "Cropper Farm", url: "https://cropper.finance/farms/?s=Be5mLMaSg1PpBJbK3P6DMAsd9arGi6xeDEApwEVeyHau");
-            await SendButtonMessage(e.Message.Chat, "Farm $HAMS. Click 👇", listMarketPriceFARM);
+            var listMarketPriceNft = new InlineKeyboardMarkup(new[] {
+                new [] {InlineKeyboardButton.WithUrl(text: "Metaplex", url: "https://hams.holaplex.com/#/"), InlineKeyboardButton.WithUrl(text: "DigitalEyes", url: "https://digitaleyes.market/collections/Space%20Hamster")}});
+            await SendMessage(update.Message?.Chat, "Buy $HAMS NFT collection", listMarketPriceNft);
         }
 
-        static async Task PreparingMessageNftTeam(MessageEventArgs e)
+        private static async Task PreparingMessageFarmTeam(Update update)
         {
-            var listMarketPriceNFT = new InlineKeyboardMarkup(new[] {
-                    new [] {InlineKeyboardButton.WithUrl(text: "Metaplex", url: "https://hams.holaplex.com/#/"), InlineKeyboardButton.WithUrl(text: "DigitalEyes", url: "https://digitaleyes.market/collections/Space%20Hamster")}});
-            await SendButtonMessage(e.Message.Chat, "Buy $HAMS NFT collection", listMarketPriceNFT);
+            var listMarketPriceFarm = InlineKeyboardButton.WithUrl(text: "Cropper Farm", url: "https://cropper.finance/farms/?s=Be5mLMaSg1PpBJbK3P6DMAsd9arGi6xeDEApwEVeyHau");
+            await SendMessage(update.Message?.Chat, "Farm $HAMS. Click 👇", listMarketPriceFarm);
         }
 
-        static async Task PreparingMessagePriceTeam(MessageEventArgs e)
+        private static async Task SendMessage(Chat chatId, string message, InlineKeyboardMarkup interactionButtons = null)
         {
-            var client = new HttpClient();
-            var task = await client.GetAsync(urlCoinString);
-            var jsonString = await task.Content.ReadAsStringAsync();
-            Coin[] coin = JsonConvert.DeserializeObject<Coin[]>(jsonString);
-            string coinInfo = $"{coin[0].name} - ${coin[0].symbol.ToUpper()}\n" +
-                              $"💰 Price: ${string.Format("{0:f5}", coin[0].current_price ?? 0)}\n" +
-                              $"⚖️ H: ${string.Format("{0:f5}", coin[0].high_24h ?? 0)}" +
-                              $" | L: ${string.Format("{0:f5}", coin[0].low_24h ?? 0)}\n" +
-                              $"🌚 1h: {string.Format("{0:f2}", coin[0].price_change_percentage_1h_in_currency ?? 0)}% \n" +
-                              $"🌚 24h: {string.Format("{0:f2}", coin[0].price_change_percentage_24h_in_currency ?? 0)}% \n" +
-                              $"📈 7d: {string.Format("{0:f2}", coin[0].price_change_percentage_7d_in_currency ?? 0)}% \n" +
-                              $"📊 Volume: ${string.Format("{0:f2}", coin[0].total_volume ?? 0)}\n";
-            await SendMessage(e.Message.Chat, coinInfo);
+            await _bot.SendTextMessageAsync(chatId, message, replyMarkup: interactionButtons);
         }
 
-        static async Task SendMessage(Chat chatId, string message)
+        private static Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
         {
-            await botClient.SendTextMessageAsync(
-             chatId: chatId,
-             text: message
-           );
+            Console.WriteLine(JsonConvert.SerializeObject(exception));
+            return Task.CompletedTask;
         }
-
-        static async Task SendButtonMessage(Chat chatId, string message, InlineKeyboardMarkup interactionButtons)
-        {
-            await botClient.SendTextMessageAsync(
-             chatId: chatId,
-             text: message,
-             replyMarkup: interactionButtons
-           );
-        }
-    }
-
-    class Coin
-    {
-        public string symbol { get; set; }
-        public string name { get; set; }
-        public object current_price { get; set; }
-        public object total_volume { get; set; }
-        public object high_24h { get; set; }
-        public object low_24h { get; set; }
-        public object price_change_percentage_1h_in_currency { get; set; }
-        public object price_change_percentage_24h_in_currency { get; set; }
-        public object price_change_percentage_7d_in_currency { get; set; }
     }
 }
