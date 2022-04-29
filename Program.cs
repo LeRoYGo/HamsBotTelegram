@@ -11,7 +11,7 @@ namespace HamsBotTelegram
 {
     class Program
     {
-        private static ITelegramBotClient _bot = new TelegramBotClient("2016040925:AAGxwLKV6ZikKCqVHkrT4fQ27c9zQ8ry-QU");
+        private static ITelegramBotClient _bot = new TelegramBotClient("TOKEN");
 
         static void Main()
         {
@@ -49,14 +49,14 @@ namespace HamsBotTelegram
         static void PreparingMessagePriceTeam(Update update)
         {
             Coin coin = new Coin().GetApiDataAsync().Result;
-            string coinInfo = $"{coin.name} - ${coin.symbol.ToUpper()}\n" +
-                              $"💰 Price: ${coin.current_price ?? 0:f5}\n" +
-                              $"⚖️ H: ${coin.high_24h ?? 0:f5}" +
-                              $" | L: ${coin.low_24h ?? 0:f5}\n" +
-                              $"🌚 1h: {coin.price_change_percentage_1h_in_currency ?? 0:f2}% \n" +
-                              $"🌚 24h: {coin.price_change_percentage_24h_in_currency ?? 0:f2}% \n" +
-                              $"📈 7d: {coin.price_change_percentage_7d_in_currency ?? 0:f2}% \n" +
-                              $"📊 Volume: ${coin.total_volume ?? 0:f2}\n";
+            string coinInfo = $"{coin.Name} - ${coin.Symbol.ToUpper()}\n" +
+                              $"💰 Price: ${coin.CurrentPrice ?? 0:f5}\n" +
+                              $"⚖️ H: ${coin.High24h ?? 0:f5}" +
+                              $" | L: ${coin.Low24h ?? 0:f5}\n" +
+                              $"🌚 1h: {coin.PriceChangePercentage1hCurrency ?? 0:f2}% \n" +
+                              $"🌚 24h: {coin.PriceChangePercentage24hCurrency ?? 0:f2}% \n" +
+                              $"📈 7d: {coin.PriceChangePercentage7dCurrency ?? 0:f2}% \n" +
+                              $"📊 Volume: ${coin.TotalVolume ?? 0:f2}\n";
             SendMessage(update.Message?.Chat, coinInfo);
         }
 
